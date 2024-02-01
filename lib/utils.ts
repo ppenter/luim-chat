@@ -1,0 +1,46 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export const word2lower = (word: string) => {
+  // lower word and replace spaces with dashes and underscores with dashes
+  return word.toLowerCase().replace(/ /g, "-").replace(/_/g, "-");
+};
+
+export const lower2word = (lower: string) => {
+  // replace dashes with spaces and capitalize first letter and replace underscores with spaces
+  return lower
+    .replace(/-/g, " ")
+    .replace(/_/g, " ")
+    .replace(/\w\S*/g, (w) => w.replace(/^\w/, (c) => c.toUpperCase()));
+};
+
+export const extract_form_data = (form: HTMLFormElement) => {
+  const data = form;
+  let json = {} as any;
+  for (const target in data) {
+    if (!isNaN(parseInt(target))) {
+      const input = data[target] as HTMLInputElement;
+      if (input.name && input.value) {
+        json[input.name] = input.value;
+      }
+    }
+  }
+  return json;
+};
+
+export const json2urlparams = (json: any) => {
+  // convert json to url params if value is array, join with comma and add blanket
+  let params = "";
+  for (const key in json) {
+    if (Array.isArray(json[key])) {
+      params += `${key}=["${json[key].join('","')}"]&`;
+    } else {
+      params += `${key}=${json[key]}&`;
+    }
+  }
+  return params;
+};

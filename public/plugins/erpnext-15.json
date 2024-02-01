@@ -1,0 +1,58 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "ERPNext Function",
+  "name_for_model": "erpnext",
+  "description_for_human": "Functions for query ERPNext documents",
+  "description_for_model": "erpnext query functions",
+  "auth": true,
+  "tags": ["todo", "list", "task"],
+  "api": [
+    {
+      "name": "getList",
+      "url": "/api/resource/",
+      "description": "Get a list of documents from ERPNext. If limit_page_length is not set, then set it to 999. If user not set fields, then set it to ['name']. If order_by is not set, then set it to modified desc, creation asc.",
+      "parameters": {
+        "properties": {
+          "doctype": {
+            "type": "string",
+            "enum": ["Employee", "Sales Invoice"],
+            "description": "Document type",
+            "dynamicPath": true
+          },
+          "fields": {
+            "type": "array",
+            "description": "Fields to return",
+            "items": {
+              "type": "string"
+            }
+          },
+          "filters": {
+            "type": "array",
+            "description": "Filters to apply",
+            "example": "[[\"name\", \"=\", \"John Doe\"]]",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "limit_page_length": {
+            "type": "number",
+            "value": 999,
+            "description": "Limit page length always to 999"
+          },
+          "order_by": {
+            "type": "string",
+            "description": "Order by field and direction",
+            "example": "modified desc, creation asc"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ],
+  "logo_url": "PLUGIN_HOSTNAME/logo.png",
+  "contact_email": "support@example.com",
+  "legal_info_url": "https://example.com/legal"
+}
