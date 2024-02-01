@@ -68,3 +68,14 @@
 .__next-auth-theme-auto {
   --color-background: #ffffff;
 }
+
+/* all input to font 16px if mobile */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select,
+  button
+  {
+    font-size: 16px!important;
+  }
+}
