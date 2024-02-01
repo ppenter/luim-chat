@@ -2,6 +2,10 @@
 
 Welcome to **Luim Ai** 🚀, the cutting-edge AI assistant designed specifically for business applications. Harnessing the power of artificial intelligence, Luim Ai streamlines your business processes, enhances productivity, and enables smarter decision-making. Tailored for the dynamic needs of modern businesses, Luim Ai integrates seamlessly into your existing workflows, offering a robust suite of features designed to empower your organization.
 
+## Preview
+![Screenshot 2567-02-02 at 00 26 51](https://github.com/ppenter/luim-chat/assets/55227490/ab46ae55-ff55-40d2-bf06-e778cb074109)
+![Screenshot 2567-02-02 at 00 26 20](https://github.com/ppenter/luim-chat/assets/55227490/1a36bf70-1fa3-4ca1-b876-1d51964cfa0a)
+
 ## 🛠 Features
 
 - **Function Calling:** With Luim Ai, complex tasks become straightforward. Our advanced function calling capability allows you to execute multiple operations with ease, automating processes and reducing manual workload. 📈
