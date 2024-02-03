@@ -57,6 +57,7 @@ export default function Settings() {
     setOpenAiSetting(data);
   };
 
+
   const [functionsContext, setFunctionsContext] =
     useRecoilState(functionsContextAtom);
 
@@ -97,6 +98,10 @@ export default function Settings() {
     fetchFunctionsContext();
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setOpenAiSettingForm(openaiSetting);
+  }, [openaiSetting]);
 
   if (!mounted) return null;
 
