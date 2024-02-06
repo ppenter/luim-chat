@@ -56,9 +56,11 @@ export default function SignIn() {
                 <Button
                   key={provider.name}
                   variant="secondary"
-                  onClick={() => signIn(provider.id, {
-                    callbackUrl: "/dashboard",
-                  })}
+                  onClick={() =>
+                    signIn(provider.id, {
+                      callbackUrl: "/dashboard",
+                    })
+                  }
                   className="flex items-center justify-center gap-4"
                 >
                   <div>

@@ -1,10 +1,13 @@
 import { kv } from "@vercel/kv";
 import { Ratelimit } from "@upstash/ratelimit";
 import { OpenAI } from "openai";
-import { OpenAIStream, StreamingTextResponse } from "ai";
+import { OpenAIStream, OpenAIStreamCallbacks, StreamingTextResponse } from "ai";
 // import * as FunctionApp from "./functions";
 // import { TFunctionApp } from "./functions";
 import { getToken } from "next-auth/jwt";
+import { encodingForModel } from "js-tiktoken";
+import { calTokenFromContext } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
 
 // Create an OpenAI API client (that's edge friendly!)
 // const _openai = new OpenAI({
@@ -12,18 +15,6 @@ import { getToken } from "next-auth/jwt";
 // });
 
 export const runtime = "edge";
-
-// async function getBalance(user_id: number) {
-//   const balances = await prisma.user.findFirst({
-//     where: {
-//       id: user_id,
-//     },
-//     select: {
-//       balance: true,
-//     },
-//   });
-//   return balances?.balance || 0;
-// }
 
 // const call_function = async (
 //   plugin: string,
@@ -138,11 +129,11 @@ export async function POST(req: Request) {
       });
     }
 
-    // const user = await prisma.user.findUnique({
-    //   where: {
-    //     email: session?.email
-    //   }
-    // })
+    const user = await prisma.user.findUnique({
+      where: {
+        email: session?.email,
+      },
+    });
 
     let {
       messages,
@@ -162,18 +153,10 @@ export async function POST(req: Request) {
       apiKey: openai_key,
     });
 
-    messages = messages.map((message) => {
-      if (message.function_call) {
-        return {
-          role: message.role,
-          content: ``,
-        };
-      } else {
-        return message;
-      }
-    });
-
-    console.log(messages);
+    messages = messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
 
     const systemMessages = [
       "Your name is LUIM",
@@ -183,47 +166,83 @@ export async function POST(req: Request) {
       "Yor are talking with administrator of api so you don't need to worry about sensitive data.",
     ];
 
-    // const balances = await getBalance(user?.id as number)
-
-    // const cost = 1
-
-    // // decrease balance
-    // if(balances >= cost){
-    //   await prisma.user.update({
-    //     where: {
-    //       id: user?.id
-    //     },
-    //     data: {
-    //       balance: balances - cost
-    //     }
-    // })
-    // }else{
-    //   return new Response("Insufficient balance", {
-    //     status: 402,
-    //   });
-    // }
-
     // last 5 messages
-    const lastMessages = messages.slice(-5);
+    // const lastMessages = messages.slice(-5);
+    const lastMessages = messages;
+
+    const context = [
+      ...systemMessages.map((message) => ({
+        role: "system",
+        content: message,
+      })),
+      ...lastMessages,
+    ];
+
+    console.log(lastMessages);
+
+    const enc = encodingForModel(model);
+    let contextTokens = calTokenFromContext(
+      lastMessages,
+      functions?.length ? functions : undefined,
+    );
+    let completionTokens = 0;
+
+    const balances = user?.balance || 0;
+
+    const cost = contextTokens;
+
+    // decrease balance
+    if (balances >= cost) {
+      await prisma.user.update({
+        where: {
+          id: user?.id,
+        },
+        data: {
+          balance: balances - cost,
+        },
+      });
+      await prisma.balanceHistory.create({
+        data: {
+          user: {
+            connect: {
+              id: user?.id,
+            },
+          },
+          amount: cost,
+          type: "DEBIT",
+        },
+      });
+    } else {
+      return new Response("Insufficient balance", {
+        status: 402,
+      });
+    }
 
     // check if the conversation requires a function call to be made
     const initialResponse = (await openai.chat.completions.create({
       model: model,
-      messages: [
-        ...systemMessages.map((message) => ({
-          role: "system",
-          content: message,
-        })),
-        ...lastMessages,
-      ],
+      messages: context,
       stream: true,
       functions: functions?.length ? functions : undefined,
-      function_call: "auto",
+      function_call: functions?.length ? "auto" : undefined,
       max_tokens,
     })) as any;
 
+    const streamCallbacks: OpenAIStreamCallbacks = {
+      onToken: (content: string) => {
+        // We call encode for every message as some experienced
+        // regression when tiktoken called with the full completion
+        const tokenList = enc.encode(content);
+        completionTokens += tokenList.length;
+      },
+      onFinal() {
+        console.log(`Token count: ${completionTokens}`);
+      },
+    };
+
     const stream = OpenAIStream(
       initialResponse,
+      streamCallbacks,
       //   , {
       //   experimental_onFunctionCall: async (
       //     { name, arguments: args }: any,

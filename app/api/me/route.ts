@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    if (!session?.user?.id)
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     const user = await prisma.user.findUnique({
       where: {
         id: session?.user?.id,

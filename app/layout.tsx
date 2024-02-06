@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <meta name="HandheldFriendly" content="true" />
       </head>
-      <body className={inter.className + " flex flex-col"}>{children}</body>
+      <body className={inter.className + " flex flex-col bg-zinc-50"}>{children}</body>
       <Analytics />
     </html>
   );

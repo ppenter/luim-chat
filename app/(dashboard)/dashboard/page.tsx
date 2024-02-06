@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useChat } from "ai/react";
 import va from "@vercel/analytics";
 import clsx from "clsx";
@@ -30,8 +30,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import ChatBubble from "@/components/chat-bubble";
 import { Textarea } from "@/components/ui/textarea";
+import { calToken, calTokenFromContext } from "@/lib/utils";
+import { CheckCircledIcon, CrossCircledIcon, DesktopIcon, LightningBoltIcon, PersonIcon } from "@radix-ui/react-icons";
 // import ChatBubble from "@/components/chat-bubble";
-
 
 export default function Chat() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -43,6 +44,11 @@ export default function Chat() {
   const [plugins, setPlugins] = useRecoilState(pluginsAtom);
   const [installedPlugins] = useRecoilState(installedPluginsAtom);
 
+  const [tokenCost, setTokenCost] = useState(0);
+  const [funcTokenCost, setFuncTokenCost] = useState(0);
+  const [isCal, SetIsCal] = useState(true);
+  const [isExcludeFunction, setIsExcludeFunction] = useState(true);
+
   const initialMessages: {
     id: string;
     role: "user" | "assistant" | "system";
@@ -52,7 +58,7 @@ export default function Chat() {
       id: "1",
       role: "assistant",
       content: "Welcome to LUIM!",
-    },
+    }
   ];
 
   async function init() {
@@ -72,19 +78,23 @@ export default function Chat() {
           va.track("Chat initiated");
         }
         init();
+        toast.success("Success");
       },
       onError: (error) => {
         va.track("Chat errored", {
           input,
           error: error.message,
         });
+        toast.error(error.message);
       },
       initialMessages: initialMessages,
+      onFinish(message) {
+        console.log(message);
+      },
     });
 
   const call_function = async (message: any) => {
     try {
-      console.log(message);
       // if function call
       if (message?.function_call?.name) {
         const context = functionsContext?.find(
@@ -212,6 +222,34 @@ export default function Chat() {
     call();
   }, [messages]);
 
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      const _messages = isExcludeFunction
+        ? messages.filter((message) => !message?.function_call)
+        : [...messages];
+      setTokenCost(
+        calTokenFromContext(
+          [
+            ..._messages,
+            {
+              role: "user",
+              content: inputRef.current?.value || "",
+            },
+          ],
+          functionsContext?.length ? functionsContext : undefined,
+        ),
+      );
+      setFuncTokenCost(
+        functionsContext?.length
+          ? calToken(JSON.stringify(functionsContext))
+          : 0,
+      );
+      SetIsCal(false);
+    }, 1000);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [messages, isExcludeFunction, functionsContext]);
+
   const fetchPlugins = async () => {
     const res = await fetch("/plugins/index.json");
     const json = await res.json();
@@ -254,12 +292,22 @@ export default function Chat() {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const _messages = isExcludeFunction
+      ? messages.filter((message) => !message?.function_call)
+      : [...messages];
     handleSubmit(e, {
       options: {
         body: {
           openai_key: openaiSetting?.apiKey,
           functions: functionsContext,
           plugins: installedPlugins,
+          messages: [
+            ..._messages,
+            {
+              role: "user",
+              content: inputRef.current?.value || "",
+            },
+          ],
         },
       },
     });
@@ -270,7 +318,7 @@ export default function Chat() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-between pb-40">
+    <div className="flex flex-col items-center justify-between pb-64">
       <div className="flex w-full max-w-screen-md flex-1 flex-col gap-2">
         {messages?.map((message, i) => {
           if (message.role === "system") {
@@ -278,29 +326,42 @@ export default function Chat() {
           }
           return (
             <div
-              key={i}
+            key={i}
               className={clsx(
-                "flex w-full items-center py-8",
-                message.role === "user" ? "justify-end" : "justify-start",
+                "flex flex-col w-full gap-2",
+                `${
+                  isExcludeFunction
+                    ? message?.function_call
+                      ? "opacity-70 hover:opacity-100"
+                      : ""
+                    : ""
+                }`
+              )}
+            >
+            <div
+              className={clsx(
+                "flex w-full items-center py-8"
               )}
             >
               <div className="flex items-start gap-2 space-x-4 px-5 lg:gap-2">
-                <div
+                <Button
+                  size='icon'
+                  variant={message.role === "user" ? "secondary" : "default"}
                   className={clsx(
-                    "p-1.5 text-white md:text-4xl",
+                    "aspect-square",
                     // message.role === "assistant" ? "bg-green-500" : "bg-black",
                   )}
                 >
                   {message.role === "user"
                     ? // <User width={20} />
-                      null
+                      <PersonIcon/>
                     : // <Bot width={20} />
-                      "🤖"}
-                </div>
+                      <DesktopIcon/>}
+                </Button>
                 <ChatBubble role={message.role}>
                   <ReactMarkdown
                     className={`prose mt-1 w-full break-words prose-p:leading-relaxed ${
-                      message.role == "user" ? "text-end text-white" : ""
+                      message.role == "user" ? "" : ""
                     }`}
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -317,25 +378,44 @@ export default function Chat() {
                     {message.content}
                   </ReactMarkdown>
                 </ChatBubble>
-                <div
-                  className={clsx(
-                    "p-1.5 text-white md:text-4xl",
-                    // message.role === "assistant" ? "bg-green-500" : "bg-black",
-                  )}
-                >
-                  {message.role === "user"
-                    ? // <User width={20} />
-                      "😎"
-                    : // <Bot width={20} />
-                      null}
-                </div>
               </div>
+            </div>
+            <div className="flex justify-end gap-2">
+            <span
+                      className={`${
+                        message.role == "user" ? "" : ""
+                      }
+                      text-xs text-gray-400 cursor-pointer hover:text-gray-600`}
+                      onClick={() => {
+                        const res = confirm("Are you sure?");
+                        if (res) {
+                          setMessages(
+                            messages.filter((m) => m.id !== message.id),
+                          );
+                        }
+                      }}
+                    >
+                      Delete
+                    </span>
+              </div>
+            <Separator/>
             </div>
           );
         })}
       </div>
-      <div className="fixed bottom-0 flex w-full max-w-4xl flex-col items-center space-y-3 p-2 pb-3 sm:px-4">
-        <div className="flex w-full flex-wrap gap-4"></div>
+      <div className="fixed bg-white bottom-0 flex w-full max-w-4xl flex-col items-center space-y-3 p-4 pb-3 sm:px-4 pt-6 rounded-t-xl border-t border-l border-r">
+        <div className="flex w-full flex-wrap gap-4">
+          <Button
+            variant="outline"
+            className="flex gap-2 items-center"
+            onClick={() => {
+              setIsExcludeFunction(!isExcludeFunction);
+            }}
+          >
+            {isExcludeFunction ? <CrossCircledIcon/> : <CheckCircledIcon/>}
+            {!isExcludeFunction ? "Include" : "Exclude"} Function
+          </Button>
+        </div>
         <form ref={formRef} onSubmit={onSubmit} className="relative w-full">
           {/* Hidded */}
           <input
@@ -352,7 +432,10 @@ export default function Chat() {
             autoFocus
             placeholder="Send a message"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              SetIsCal(true);
+              setInput(e.target.value);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 formRef.current?.requestSubmit();
@@ -362,6 +445,10 @@ export default function Chat() {
             spellCheck={false}
             className="h-9 w-full resize-none bg-white pr-10 focus:outline-none"
           />
+          <div className="absolute bottom-0 left-0 flex gap-2 px-3 pb-1 text-xs">
+            {/* Diamond Emoji */}
+            <LightningBoltIcon/> {!isCal ? tokenCost : "..."}
+          </div>
           <div className="absolute right-0 top-0 flex h-full items-center gap-2 pr-2 sm:pr-6">
             <Button disabled={disabled}>
               {isLoading ? (
@@ -377,8 +464,15 @@ export default function Chat() {
             </Button>
             <Dialog>
               <DialogTrigger>
-                <Button type="button" variant="secondary">
-                  Fx
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex flex-col"
+                >
+                  <span className="text-xs">Fx</span>
+                  <span className="text-xs text-zinc-400">
+                    {!isCal ? funcTokenCost : "..."}
+                  </span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-h-[80vh] overflow-auto">
@@ -391,7 +485,6 @@ export default function Chat() {
                 <Separator />
                 <div>
                   {installedPlugins.map((plugin) => {
-                    if (!plugin?.isActive) return null;
                     const _plugin = plugins.find(
                       (_plugin: any) => _plugin.name === plugin.name,
                     );
@@ -401,7 +494,11 @@ export default function Chat() {
                         className="flex items-center justify-between gap-4"
                       >
                         <p>{_plugin.title}</p>
-                        <span className="me-3 flex h-3 w-3 rounded-full bg-green-500"></span>
+                        <span
+                          className={`me-3 flex h-3 w-3 rounded-full ${
+                            !plugin?.isActive ? "bg-red-500" : "bg-green-500"
+                          }`}
+                        ></span>
                       </div>
                     );
                   })}
@@ -445,6 +542,6 @@ export default function Chat() {
           </p>
         </p>
       </div>
-    </main>
+    </div>
   );
 }

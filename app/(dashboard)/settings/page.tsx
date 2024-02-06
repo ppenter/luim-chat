@@ -57,7 +57,6 @@ export default function Settings() {
     setOpenAiSetting(data);
   };
 
-
   const [functionsContext, setFunctionsContext] =
     useRecoilState(functionsContextAtom);
 

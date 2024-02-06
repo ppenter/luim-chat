@@ -3,14 +3,14 @@ import { Button } from "./ui/button";
 import { usePathname, useRouter } from "next/navigation";
 
 export const SettingMenuItems = [
-    {
-      name: "Settings",
-      path: "/settings",
-    },
-    {
-      name: "Profile",
-    },
-  ];
+  {
+    name: "Settings",
+    path: "/settings",
+  },
+  {
+    name: "Profile",
+  },
+];
 
 export default function SheetBar() {
   const router = useRouter();

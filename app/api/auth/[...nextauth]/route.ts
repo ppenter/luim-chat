@@ -5,6 +5,6 @@ const handler = NextAuth({
   ...authOptions,
   pages: {
     signIn: "/auth/signin",
-  }
+  },
 });
 export { handler as GET, handler as POST };

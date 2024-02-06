@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <div>
             <Navbar />
           </div>
-          <div className="flex-1">{children}</div>
+          <div className="flex-1 pt-16">{children}</div>
         </Provider>
         <Toaster />
       </div>

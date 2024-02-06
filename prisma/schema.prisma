@@ -22,4 +22,24 @@ model User {
   name     String?
   password String?
   settings String?
+  balance Int @default(10000)
+  chat_history  ChatHistory[]
+  balance_history BalanceHistory[]
+}
+
+model ChatHistory {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  token_count   Int
+  createdAt DateTime @default(now())
+}
+
+model BalanceHistory {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  amount   Int @default(0 )
+  type      TokenTransactionType
+  createdAt DateTime @default(now())
 }

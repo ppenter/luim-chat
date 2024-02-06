@@ -6,6 +6,8 @@ import { Button } from "./ui/button";
 import { useRecoilState } from "recoil";
 import { useEffect } from "react";
 import { meAtom } from "@/states/atom";
+import { nFormatter } from "@/lib/utils";
+import { LightningBoltIcon } from "@radix-ui/react-icons";
 
 export default function Navbar() {
   const [me, setMe] = useRecoilState(meAtom);
@@ -47,7 +49,7 @@ export default function Navbar() {
     );
 
   return (
-    <div className="flex w-full items-center justify-between border-b px-5 py-4">
+    <div className="z-50 fixed bg-white dark:bg-black flex w-full items-center justify-between border-b px-5 py-4">
       <Link href="/dashboard" className="text-2xl font-bold tracking-widest">
         LUIM
       </Link>
@@ -66,8 +68,15 @@ export default function Navbar() {
         {/* <Button variant="outline" className="flex items-center gap-2">
             <p>Hobby</p>
           </Button> */}
+        <Button variant="outline" className="flex items-center gap-2">
+          <p className="flex gap-2 items-center"><LightningBoltIcon/> {nFormatter(me?.balance, 2) || 0}</p>
+        </Button>
         <Link href="/settings" className="flex items-center gap-2">
-          <Settings />
+        <Button 
+        size='icon'
+        variant='outline' className="flex items-center gap-2">
+          <Settings size={16}/>
+        </Button>
         </Link>
       </div>
     </div>
