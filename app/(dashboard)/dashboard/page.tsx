@@ -30,7 +30,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import ChatBubble from "@/components/chat-bubble";
 import { Textarea } from "@/components/ui/textarea";
-import { calToken, calTokenFromContext } from "@/lib/utils";
+import { calToken, calTokenFromContext } from "@/lib/token";
 import { CheckCircledIcon, CrossCircledIcon, DesktopIcon, LightningBoltIcon, PersonIcon } from "@radix-ui/react-icons";
 // import ChatBubble from "@/components/chat-bubble";
 

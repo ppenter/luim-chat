@@ -1,6 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { encodingForModel } from "js-tiktoken";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -45,31 +44,6 @@ export const json2urlparams = (json: any) => {
   }
   return params;
 };
-
-export interface IMessage {
-  role: "function" | "user" | "system" | "assistant";
-  content: string;
-}
-
-export function calToken(text: string) {
-  const enc = encodingForModel("gpt-3.5-turbo-1106");
-  return enc.encode(text).length;
-}
-
-export function calTokenFromContext(messages: IMessage[], functions?: any[]) {
-  let token = 1;
-  for (const message of messages) {
-    token += 3;
-    token += calToken(message.content);
-    token += 2;
-  }
-  if (functions) {
-    const func = JSON.stringify(functions);
-    token += calToken(func);
-  }
-  token += 2;
-  return token;
-}
 
 export function nFormatter(num: number, digits: number | undefined) {
   const lookup = [

@@ -4,7 +4,7 @@ import { OpenAI } from "openai";
 import { OpenAIStream, OpenAIStreamCallbacks, StreamingTextResponse } from "ai";
 import { getToken } from "next-auth/jwt";
 import { encodingForModel } from "js-tiktoken";
-import { calTokenFromContext } from "@/lib/utils";
+import { calTokenFromContext } from "@/lib/token";
 import { prisma } from "@/lib/prisma";
 
 // Create an OpenAI API client (that's edge friendly!)
