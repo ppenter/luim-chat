@@ -3,7 +3,6 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { OpenAI } from "openai";
 import { OpenAIStream, OpenAIStreamCallbacks, StreamingTextResponse } from "ai";
 import { getToken } from "next-auth/jwt";
-import { encodingForModel } from "js-tiktoken";
 import { calTokenFromContext } from "@/lib/token";
 import { prisma } from "@/lib/prisma";
 
@@ -114,12 +113,10 @@ export async function POST(req: Request) {
 
     console.log(lastMessages);
 
-    const enc = encodingForModel(model);
     let contextTokens = calTokenFromContext(
       lastMessages,
       functions?.length ? functions : undefined,
     );
-    let completionTokens = 0;
 
     const balances = user?.balance || 0;
 
@@ -163,15 +160,7 @@ export async function POST(req: Request) {
     })) as any;
 
     const streamCallbacks: OpenAIStreamCallbacks = {
-      onToken: (content: string) => {
-        // We call encode for every message as some experienced
-        // regression when tiktoken called with the full completion
-        const tokenList = enc.encode(content);
-        completionTokens += tokenList.length;
-      },
-      onFinal() {
-        console.log(`Token count: ${completionTokens}`);
-      },
+      
     };
 
     const stream = OpenAIStream(
